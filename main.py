@@ -44,7 +44,7 @@ kernel_num = 100
 ch = 1
 batch_size = 50
 learning_rate = 0.001
-epochs = 3
+epochs = 5
 
 model = Convolution(ch, embed_size, class_num - 1, embed_size, h, max_len, vocab_size)
 criterion = torch.nn.BCEWithLogitsLoss()
