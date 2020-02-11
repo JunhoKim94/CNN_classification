@@ -42,7 +42,7 @@ y_val = torch.Tensor(val_data[:, -1]).to(torch.float).to(device)
 vocab_size = len(word2idx)
 total = len(train_data)
 embed_size = 300
-h = [2,3,4]
+h = [3,4,5]
 class_num = 2
 kernel_num = 100
 ch = 1
@@ -97,7 +97,7 @@ for epoch in range(epochs):
     loss_stack.append(epoch_loss)
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
-    if (epoch %10 == 0):
+    if (epoch % 10 == 0):
         print(f"epoch = {epoch} | loss = {epoch_loss} | val_score = {score} | lr = {lr}")
     
 def plot(acc_stack, loss_stack, epochs):
