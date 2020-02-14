@@ -6,8 +6,8 @@ from model.CNN import Convolution
 import matplotlib.pyplot as plt
 
 print("\n ==============================> Training Start <=============================")
-#device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
-device = torch.device("cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+#device = torch.device("cpu")
 print(torch.cuda.is_available())
 
 
@@ -53,7 +53,8 @@ epochs = 5
 #Model
 model = Convolution(ch, kernel_num, class_num , embed_size, h, max_len, vocab_size, Weight, 0.2)
 criterion = torch.nn.BCEWithLogitsLoss()
-optimizer = torch.optim.Adagrad(model.parameters(), lr = learning_rate)
+#optimizer = torch.optim.Adagrad(model.parameters(), lr = learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
 #torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
