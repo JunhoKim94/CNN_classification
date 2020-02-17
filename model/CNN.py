@@ -19,53 +19,56 @@ class Convolution(torch.nn.Module):
         self.output_ch = output_ch
         self.kernel = kernel_window
         self.vocab_size = vocab_size
+        self.out = out
+        self.emb_size = embed
 
         if pre_weight is not None:
-            self.pre_weight = torch.Tensor(pre_weight)
+            self.embed = torch.nn.Embedding(self.vocab_size, embed, _weight = pre_weight, padding_idx = 0)
         else:
-            self.pre_weight = None
+            self.embed = torch.nn.Embedding(self.vocab_size, embed, padding_idx = 0)
 
         #UNK token & padding 모두 0으로 처리
-        self.embed = torch.nn.Embedding(self.vocab_size, embed, _weight = self.pre_weight)
+        
         #(B,C,X,Y) 가 인풋
-        
-        self.conv = []
-        
-        for h in self.kernel:
-            layer = torch.nn.Sequential(
-            torch.nn.Conv2d(self.input_ch, self.output_ch, (h, embed)),
-            torch.nn.ReLU(),
-            )
-            
-            self.conv.append(layer)
-        
-        self.conv = torch.nn.ModuleList(self.conv)
-        
-        self.linear = torch.nn.Sequential(
-        torch.nn.Linear(self.output_ch * len(self.kernel), out),
-        torch.nn.Dropout(p = drop_out)
-        )
+         
+        self.conv = torch.nn.ModuleList([torch.nn.Conv2d(self.input_ch, self.output_ch, (h, embed)) for h in self.kernel])
+        self.linear = torch.nn.Linear(self.output_ch * len(self.kernel), self.out)
+        self.dropout = torch.nn.Dropout(drop_out)
 
-    def forward(self, x):
+        self.init_weight()
+
+    def init_weight(self):
+        self.embed.weight.data.uniform_(-0.01,0.01)
+        #self.embed.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01,0.01,size = (self.vocab_size,self.emb_size))))
+        
+
+        for layer in self.conv:
+            #layer.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01, 0.01,(self.output_ch, 1, self.kernel[i],self.emb_size))))
+            layer.weight.data.uniform_(-0.01, 0.01)
+        
+        self.linear.weight.data.uniform_(-0.01, 0.01)
+        #self.linear.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01,0.01, (self.out,self.output_ch * len(self.kernel)))))
+            
+
+    def forward(self, x, train = True):
         '''
         x = (Batch, Channel, Sentence(max_len))
         '''
         batch_size = x.shape[0]
-        sentence = x.shape[2]
+        #sentence = x.shape[2]
         #(B,ch, S, embed_size)
         out = self.embed(x)
+        #out = out.unsqueeze(1)
 
-        output = []
-        for i, conv in enumerate(self.conv):
-            #(B,out_ch, S - h + 1)
-            temp = conv(out)
-            temp = temp.squeeze(3)
-            temp = F.max_pool2d(temp, (1,  sentence - self.kernel[i] + 1))
-            temp = temp.squeeze(2)
-            output.append(temp)
+        #(B, output_ch, S-k+1, 1) -->. (B,output_ch, S-k+1)
+        output = [F.relu(conv(out)).squeeze(3) for conv in self.conv]
+        #(B,output_ch)
+        output = [F.max_pool1d(i, i.size(2)).squeeze(2) for i in output]
 
-        #(B, 3 * out_ch, 1)
-        out = torch.cat([output[0], output[1], output[2]], dim = 1)
-
-
-        return self.linear(out)
+        #(B, 3 * out_ch)
+        out = torch.cat(output, dim = 1)
+        if train:
+            out = self.dropout(out)
+        out = F.log_softmax(self.linear(out), dim = 1)
+        #out = self.linear(out)
+        return out
