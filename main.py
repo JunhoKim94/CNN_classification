@@ -6,8 +6,8 @@ from model.CNN import Convolution
 import matplotlib.pyplot as plt
 
 print("\n ==============================> Training Start <=============================")
-#device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
-device = torch.device("cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+#device = torch.device("cpu")
 print(torch.cuda.is_available())
 
 
@@ -31,9 +31,7 @@ word2idx, idx2word = raw_corpus(path)
 
 
 words = batch_words(path)
-print(words)
 words = word_id_gen(words, word2idx)
-print(words)
 data, max_len = padding(words)
 
 train_data, val_data = gen_data(data, val_ratio= 0.1)
@@ -96,9 +94,9 @@ for epoch in range(epochs):
     scheduler.step()
     epoch_loss /= total
     y_v = torch.nn.functional.log_softmax(model(x_val), dim = 1)
-    y_v = torch.argmax(y_v, axis = 1)
+    y_v = torch.argmax(y_v, dim = 1)
 
-    y_t = torch.argmax(torch.nn.functional.log_softmax(model(x_train), dim = 1), axis = 1)
+    y_t = torch.argmax(torch.nn.functional.log_softmax(model(x_train), dim = 1), dim = 1)
     score_train = len(y_train[y_train == y_t]) / len(y_t)
 
 

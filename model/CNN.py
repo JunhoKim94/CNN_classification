@@ -23,7 +23,7 @@ class Convolution(torch.nn.Module):
         self.emb_size = embed
 
         if pre_weight is not None:
-            self.embed = torch.nn.Embedding(self.vocab_size, embed, _weight = pre_weight,padding_idx = 0)
+            self.embed = torch.nn.Embedding(self.vocab_size, embed, _weight = pre_weight, padding_idx = 0)
         else:
             self.embed = torch.nn.Embedding(self.vocab_size, embed, padding_idx = 0)
 
@@ -32,29 +32,18 @@ class Convolution(torch.nn.Module):
         #(B,C,X,Y) 가 인풋
          
         self.conv = torch.nn.ModuleList([torch.nn.Conv2d(self.input_ch, self.output_ch, (h, embed)) for h in self.kernel])
-            
         self.linear = torch.nn.Linear(self.output_ch * len(self.kernel), self.out)
-        self.dropout = torch.nn.Dropout(0.5)
+        self.dropout = torch.nn.Dropout(drop_out)
 
         self.init_weight()
 
     def init_weight(self):
-        def init(m):
-            if type(m) == torch.nn.Conv2d:
-                m.weight.data.uniform_(-0.25,0.25)
-            
-            if type(m) == torch.nn.Linear:
-                m.weight.data.normal_(0, 0.01)
-                m.bias.data.fill_(0)
-                #torch.nn.init.xavier_normal_(m.weight, 0.01)
-                torch.nn.init.kaiming_normal_(m.weight)
-                #torch.nn.init.kaiming_uniform_(m.weight)
-        self.embed.weight.data.normal_(0, 0)
+        self.embed.weight.data.uniform_(-0.25,0.25)
         
         for layer in self.conv:
-            layer.apply(init)
+            layer.weight.data.uniform_(-0.01, 0.01)
         
-        self.linear.apply(init)
+        self.linear.weight.data.uniform_(-0.01, 0.01)
             
 
     def forward(self, x):
