@@ -4,8 +4,8 @@ import pickle
 from tqdm import tqdm
 import os
 import collections
+import re
 
-stopwords = [r"[^A-Za-z0-9(),!?\'\`]",r"\'s",r"\'ve",r"n\'t",r"\'re", r"\'d", r"\'ll",",","!", r"\(", r"\)", r"\?",r"\s{2,}"]
 def save_word2vec(path = "./GoogleNews-vectors-negative300.bin", save_path = "./pre_corpus.pickle"):
 
     model = gensim.models.KeyedVectors.load_word2vec_format(path, binary = True)
@@ -49,8 +49,10 @@ def raw_corpus(path):
         with open(path, 'r', encoding= 'utf-8') as f:
             lines = f.readlines()
             for line in lines:
+                line = line.strip()
+                line = clean_str(line, True)
                 word += line.split(" ")
-        word_token += [w.lower() for w in word]
+        word_token += word
         collect.update(word_token)
     
     temp = collect.most_common()
@@ -87,6 +89,8 @@ def recall_word(path):
     with open(path, 'r', encoding= 'utf-8') as f:
         lines = f.readlines()
         for line in lines:
+            line = line.strip()
+            line = clean_str(line, True)
             word.append(line.split(" "))
 
     return word
@@ -101,13 +105,11 @@ def word_id_gen(words, word2idx):
         for line in tqdm(lines, desc = "Changing Word to Index"):
             line_id = []
             for word in line:
-                if word.lower() not in word2idx:
+                if word  not in word2idx:
                     continue
                     #line_id += [word2idx["UNK"]]
-                elif word.lower() in stopwords:
-                    continue
                 else:
-                    line_id += [word2idx[word.lower()]]
+                    line_id += [word2idx[word]]
             word_id.append(line_id)
         word_.append(word_id)
 
@@ -125,7 +127,7 @@ def padding(words, PAD = 0):
     #words = sorted(words, key=lambda items: length)
 
     train_data = np.zeros((len(length), max_len + 2), dtype = np.int32)
-
+    print(np.mean(length))
     i = 0
     #zeros padding
     for label, lines in enumerate(words):
@@ -157,3 +159,23 @@ def get_mini(data, batch_size):
     target = data[seed, -1]
 
     return train_data, target
+
+def clean_str(string, TREC=False):
+    """
+    Tokenization/string cleaning for all datasets except for SST.
+    Every dataset is lower cased except for TREC
+    """
+    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)     
+    string = re.sub(r"\'s", " \'s", string) 
+    string = re.sub(r"\'ve", " \'ve", string) 
+    string = re.sub(r"n\'t", " n\'t", string) 
+    string = re.sub(r"\'re", " \'re", string) 
+    string = re.sub(r"\'d", " \'d", string) 
+    string = re.sub(r"\'ll", " \'ll", string) 
+    string = re.sub(r",", " , ", string) 
+    string = re.sub(r"!", " ! ", string) 
+    string = re.sub(r"\(", " \( ", string) 
+    string = re.sub(r"\)", " \) ", string) 
+    string = re.sub(r"\?", " \? ", string) 
+    string = re.sub(r"\s{2,}", " ", string)    
+    return string.strip() if TREC else string.strip().lower()

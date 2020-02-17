@@ -38,31 +38,37 @@ class Convolution(torch.nn.Module):
         self.init_weight()
 
     def init_weight(self):
-        self.embed.weight.data.uniform_(-0.25,0.25)
+        self.embed.weight.data.uniform_(-0.01,0.01)
+        #self.embed.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01,0.01,size = (self.vocab_size,self.emb_size))))
         
+
         for layer in self.conv:
+            #layer.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01, 0.01,(self.output_ch, 1, self.kernel[i],self.emb_size))))
             layer.weight.data.uniform_(-0.01, 0.01)
         
         self.linear.weight.data.uniform_(-0.01, 0.01)
+        #self.linear.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01,0.01, (self.out,self.output_ch * len(self.kernel)))))
             
 
-    def forward(self, x):
+    def forward(self, x, train = True):
         '''
         x = (Batch, Channel, Sentence(max_len))
         '''
         batch_size = x.shape[0]
-        sentence = x.shape[2]
+        #sentence = x.shape[2]
         #(B,ch, S, embed_size)
         out = self.embed(x)
+        #out = out.unsqueeze(1)
 
         #(B, output_ch, S-k+1, 1) -->. (B,output_ch, S-k+1)
         output = [F.relu(conv(out)).squeeze(3) for conv in self.conv]
         #(B,output_ch)
         output = [F.max_pool1d(i, i.size(2)).squeeze(2) for i in output]
 
-
-        #(B, 3 * out_ch, 1)
+        #(B, 3 * out_ch)
         out = torch.cat(output, dim = 1)
-        out = self.dropout(out)
-
-        return F.log_softmax(self.linear(out), dim = 1)
+        if train:
+            out = self.dropout(out)
+        out = F.log_softmax(self.linear(out), dim = 1)
+        #out = self.linear(out)
+        return out

@@ -4,6 +4,7 @@ import pickle
 from preprocess import *
 from model.CNN import Convolution
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
 print("\n ==============================> Training Start <=============================")
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
@@ -34,8 +35,12 @@ words = batch_words(path)
 words = word_id_gen(words, word2idx)
 data, max_len = padding(words)
 
+print(data.shape, len(word2idx), max_len)
+
 train_data, val_data = gen_data(data, val_ratio= 0.1)
 x_val, y_val = get_mini(val_data, len(val_data))
+
+
 
 x_val = torch.tensor(x_val).to(torch.long).to(device)
 x_val = x_val.unsqueeze(1)
@@ -51,10 +56,10 @@ kernel_num = 100
 ch = 1
 batch_size = 50
 learning_rate = 0.001
-epochs = 100
+epochs = 40
 
 #Model
-model = Convolution(ch, kernel_num, class_num , embed_size, h, max_len, vocab_size, Weight, 0.5)
+model = Convolution(ch, kernel_num, class_num , embed_size, h, max_len, vocab_size, Weight, drop_out =  0.5)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
@@ -81,7 +86,7 @@ for epoch in range(epochs):
         x_train = x_train.unsqueeze(1)
         y_train = torch.tensor(batch_target).to(torch.long).to(device)
 
-        y_pred = model(x_train)
+        y_pred = model(x_train,train = True)
         optimizer.zero_grad()
         loss = criterion(y_pred, y_train)
 
@@ -93,10 +98,10 @@ for epoch in range(epochs):
         
     scheduler.step()
     epoch_loss /= total
-    y_v = torch.nn.functional.log_softmax(model(x_val), dim = 1)
+    y_v = model(x_val, False)
     y_v = torch.argmax(y_v, dim = 1)
 
-    y_t = torch.argmax(torch.nn.functional.log_softmax(model(x_train), dim = 1), dim = 1)
+    y_t = torch.argmax(model(x_train,False), dim = 1)
     score_train = len(y_train[y_train == y_t]) / len(y_t)
 
 
@@ -105,13 +110,12 @@ for epoch in range(epochs):
     loss_stack.append(epoch_loss)
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
-    if (epoch %10 == 0):
+    if (epoch %5 == 0):
         print(f"epoch = {epoch} | loss = {epoch_loss} | val_score = {score} | lr = {lr} | train_score : {score_train}")
     
 def plot(acc_stack, loss_stack, epochs):
     a = [i for i in range(epochs)]
     
-    plt.figure(figsize = (10,8))
     fig , ax1 = plt.subplots()
     ax2 = ax1.twinx()
     acc = ax1.plot(a, acc_stack, 'r', label = 'Accuracy')
@@ -128,4 +132,4 @@ def plot(acc_stack, loss_stack, epochs):
     plt.show()
 
 
-plot(acc_stack, loss_stack, epochs)
+#plot(acc_stack, loss_stack, epochs)
