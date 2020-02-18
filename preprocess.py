@@ -144,8 +144,8 @@ def gen_data(data, val_ratio = 0.1):
     total = len(data)
     temp = int(val_ratio * total)
 
-    train_data = data[:temp, :]
-    val_data = data[temp:,:]
+    train_data = data[temp:, :]
+    val_data = data[:temp,:]
 
     return train_data, val_data
 

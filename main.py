@@ -38,9 +38,8 @@ data, max_len = padding(words)
 print(data.shape, len(word2idx), max_len)
 
 train_data, val_data = gen_data(data, val_ratio= 0.1)
+
 x_val, y_val = get_mini(val_data, len(val_data))
-
-
 
 x_val = torch.tensor(x_val).to(torch.long).to(device)
 x_val = x_val.unsqueeze(1)
@@ -73,20 +72,14 @@ loss_stack = []
 acc_stack = []
 #(B,ch, max_len)
 for epoch in range(epochs):
-
     epoch_loss = 0
     for iteration in range(total // batch_size):
-        #seed = np.random.choice(total, batch_size)
-
-        #batch_train = train_data[seed]
-        
         batch_train, batch_target = get_mini(train_data, batch_size)
-
         x_train = torch.tensor(batch_train).to(torch.long).to(device)
         x_train = x_train.unsqueeze(1)
         y_train = torch.tensor(batch_target).to(torch.long).to(device)
-
         y_pred = model(x_train,train = True)
+
         optimizer.zero_grad()
         loss = criterion(y_pred, y_train)
 
@@ -98,10 +91,10 @@ for epoch in range(epochs):
         
     scheduler.step()
     epoch_loss /= total
-    y_v = model(x_val, False)
+    y_v = F.log_softmax(model(x_val, False), dim = 1)
     y_v = torch.argmax(y_v, dim = 1)
 
-    y_t = torch.argmax(model(x_train,False), dim = 1)
+    y_t = torch.argmax(F.log_softmax(model(x_train,False), dim = 1), dim = 1)
     score_train = len(y_train[y_train == y_t]) / len(y_t)
 
 
@@ -110,7 +103,7 @@ for epoch in range(epochs):
     loss_stack.append(epoch_loss)
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
-    if (epoch %5 == 0):
+    if (epoch % 5 == 0):
         print(f"epoch = {epoch} | loss = {epoch_loss} | val_score = {score} | lr = {lr} | train_score : {score_train}")
     
 def plot(acc_stack, loss_stack, epochs):
