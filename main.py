@@ -12,7 +12,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 print(torch.cuda.is_available())
 
 
-path = ["./data/rt-polarity.neg", "./data/rt-polarity.pos"]
+path = ["./data/custrev.neg", "./data/custrev.pos"]
 
 '''
 with open("./data.pickle", 'rb') as f:
@@ -55,7 +55,7 @@ kernel_num = 100
 ch = 1
 batch_size = 50
 learning_rate = 0.001
-epochs = 40
+epochs = 20
 
 #Model
 model = Convolution(ch, kernel_num, class_num , embed_size, h, max_len, vocab_size, Weight, drop_out =  0.5)
