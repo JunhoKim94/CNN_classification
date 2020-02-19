@@ -6,29 +6,24 @@ import os
 import collections
 import re
 
-def save_word2vec(path = "./GoogleNews-vectors-negative300.bin", save_path = "./pre_corpus.pickle"):
-
-    model = gensim.models.KeyedVectors.load_word2vec_format(path, binary = True)
-
-    word2idx = dict()
-    #Weight = model.vectors.astype("float32")
-    for word in model.vocab:
-        word2idx[word] = len(word2idx)
-
-    #data = dict()
-    #data["Weight"] = Weight
-    #data["word2idx"] = word2idx
-
-    with open(save_path, "wb") as f:
-        pickle.dump(word2idx, f, protocol= pickle.HIGHEST_PROTOCOL)
-
-
-def load_word2vec(weight_path, corpus_path):
+def load_word2vec(weight_path, corpus_path, word2idx):
     with open(weight_path, "rb") as f:
         weight = pickle.load(f)
     with open(corpus_path, 'rb') as f:
         corpus = pickle.load(f)
-    return weight,corpus
+
+    print("Load Complete")
+
+    word_list = word2idx.keys()
+    word2idx = dict()
+    id_list = []
+    for word in word_list:
+        if word not in corpus:
+            continue
+        id_list.append(corpus[word])
+        word2idx[word] = len(id_list) - 1
+
+    return weight[id_list], word2idx
 
 #대용량 데이터를 나눠서 corpus를 생성
 def raw_corpus(path):
@@ -60,20 +55,14 @@ def raw_corpus(path):
     count.extend(temp)
 
     word2idx = dict()
-    idx2word = dict()
     data = []
     for word, freq in count:
         data.append(freq)
         word2idx[word] = len(word2idx)
-        idx2word[len(idx2word)] = word
         
     count = data
 
-    return word2idx, idx2word
-
-def pre_corpus(corpus, pre_corpus):
-    print(0)
-
+    return word2idx
 
 def batch_words(paths):
     words = []
@@ -138,27 +127,6 @@ def padding(words, PAD = 0):
             i += 1
 
     return train_data, max_len
-
-def gen_data(data, val_ratio = 0.1):
-    np.random.shuffle(data)
-    total = len(data)
-    temp = int(val_ratio * total)
-
-    train_data = data[:temp, :]
-    val_data = data[temp:,:]
-
-    return train_data, val_data
-
-def get_mini(data, batch_size):
-    seed = np.random.choice(len(data), batch_size, replace = False)
-
-    length = data[seed, -2]
-    max_length = max(length)
-
-    train_data = data[seed, :max_length]
-    target = data[seed, -1]
-
-    return train_data, target
 
 def clean_str(string, TREC=False):
     """
