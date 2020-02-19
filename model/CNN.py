@@ -39,16 +39,12 @@ class Convolution(torch.nn.Module):
 
     def init_weight(self):
         self.embed.weight.data.uniform_(-0.01,0.01)
-        #self.embed.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01,0.01,size = (self.vocab_size,self.emb_size))))
         
-
         for layer in self.conv:
-            #layer.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01, 0.01,(self.output_ch, 1, self.kernel[i],self.emb_size))))
             layer.weight.data.uniform_(-0.01, 0.01)
         
         self.linear.weight.data.uniform_(-0.01, 0.01)
-        #self.linear.weight = torch.nn.Parameter(torch.FloatTensor(np.random.uniform(-0.01,0.01, (self.out,self.output_ch * len(self.kernel)))))
-            
+   
 
     def forward(self, x, train = True):
         '''
