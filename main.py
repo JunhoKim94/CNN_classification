@@ -11,13 +11,14 @@ print("\n ==============================> Training Start <======================
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-
-path = ["./data/custrev.neg", "./data/custrev.pos"]
+train_type = "rand"
+path = ["./data/subj.objective", "./data/subj.subjective"]
 
 word2idx = raw_corpus(path)
 
-Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
-Weight = torch.FloatTensor(Weight).to(device)
+#Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
+#Weight = torch.FloatTensor(Weight).to(device)
+Weight = None
 
 words = batch_words(path)
 words = word_id_gen(words, word2idx)
@@ -46,7 +47,7 @@ learning_rate = 0.001
 epochs = 20
 
 #Model
-model = Convolution(ch, kernel_num, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = "multichannel")
+model = Convolution(ch, kernel_num, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
