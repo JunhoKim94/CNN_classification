@@ -5,6 +5,7 @@ from tqdm import tqdm
 import os
 import collections
 import re
+import matplotlib.pyplot as plt
 
 def save_word2vec(path = "./GoogleNews-vectors-negative300.bin", save_path = "./pre_corpus.pickle"):
 
