@@ -76,7 +76,8 @@ for epoch in range(epochs):
         optimizer.step()
 
         epoch_loss += loss.item()
-
+        
+        del x_train, y_pred, y_train
         
     scheduler.step()
     epoch_loss /= total
