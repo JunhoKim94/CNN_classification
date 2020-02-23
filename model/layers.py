@@ -3,6 +3,31 @@ import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn
 
+class Highway(nn.Module):
+    def __init__(self, input_dims):
+        super(Highway, self).__init__()
+        '''
+        mode = linear : normal MLP
+               highway : highway Network
+        '''
+        self.linear = nn.Linear(input_dims, input_dims)
+        self.gate = nn.Linear(input_dims, input_dims)
+
+    def initialize(self):
+        self.linear.weight.data.uniform_(-0.01, 0.01)
+        #torch.nn.init.kaiming_uniform_(self.linear.weight)
+        self.linear.bias.data.fill_(0)
+        self.gate.weight.data.uniform_(-0.01,0.01)
+        self.gate.bias.data.fill_(0)
+        
+    def forward(self, x):
+        
+        out = self.linear(x)
+        gate = self.gate(x) if self.mode == "highway" else torch.ones(1)
+        print(gate)
+        output = gate * out + (1 - gate) * x
+        return output
+
 class Embedding(nn.Module):
     def __init__(self, embed, vocab_size, pre_weight, train_type ="rand", padding_idx = 0):
         super(Embedding, self).__init__()
@@ -42,5 +67,3 @@ class Embedding(nn.Module):
         else:
             print(f"please write right train_type")
             exit(1)
-
-        self.embed_size = 2 * embed if train_type.lower() == "multichannel" else embed

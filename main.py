@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import pickle
 from preprocess import *
-from model.model import Convolution
+from model.model import Conv_Classifier
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from utils import *
@@ -11,16 +11,17 @@ print("\n ==============================> Training Start <======================
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-train_type = "rand"
-path = ["./data/subj.objective", "./data/subj.subjective"]
+train_type = "multichannel"
+path = ["./data/custrev.neg", "./data/custrev.pos"]
 
 word2idx = raw_corpus(path)
 
-#Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
-#Weight = torch.FloatTensor(Weight).to(device)
-Weight = None
+Weight, word2idx = load_word2vec("./pre_weight.pickle", "pre_corpus.pickle", word2idx)
+Weight = torch.FloatTensor(Weight).to(device)
+#Weight = None
 
 words = batch_words(path)
+print(words)
 words = word_id_gen(words, word2idx)
 data, max_len = padding(words)
 
@@ -41,13 +42,13 @@ embed_size = 300
 h = [3, 4, 5]
 class_num = 2
 kernel_num = 100
-ch = 1
+ch = 2
 batch_size = 50
 learning_rate = 0.001
 epochs = 20
 
 #Model
-model = Convolution(ch, kernel_num, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type)
+model = Conv_Classifier(ch, kernel_num, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type, mode = "linear")
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
@@ -62,12 +63,13 @@ acc_stack = []
 #(B,ch, max_len)
 for epoch in range(epochs):
     epoch_loss = 0
+    model.train()
     for iteration in range(total // batch_size):
         batch_train, batch_target = get_mini(train_data, batch_size)
         x_train = torch.tensor(batch_train).to(torch.long).to(device)
         x_train = x_train.unsqueeze(1)
         y_train = torch.tensor(batch_target).to(torch.long).to(device)
-        y_pred = model(x_train,train = True)
+        y_pred = model(x_train)
 
         optimizer.zero_grad()
         loss = criterion(y_pred, y_train)
@@ -76,17 +78,17 @@ for epoch in range(epochs):
         optimizer.step()
 
         epoch_loss += loss.item()
-        
-        del x_train, y_pred, y_train
+    
         
     scheduler.step()
     epoch_loss /= total
-    y_v = F.log_softmax(model(x_val, False), dim = 1)
+    model.eval()
+    y_v = F.log_softmax(model(x_val), dim = 1)
     y_v = torch.argmax(y_v, dim = 1)
 
-    y_t = torch.argmax(F.log_softmax(model(x_train,False), dim = 1), dim = 1)
+    y_t = torch.argmax(F.log_softmax(model(x_train), dim = 1), dim = 1)
     score_train = len(y_train[y_train == y_t]) / len(y_t)
-
+    del x_train, y_pred, y_train
 
     score = len(y_val[y_val == y_v]) / len(y_v)
     acc_stack.append(score)

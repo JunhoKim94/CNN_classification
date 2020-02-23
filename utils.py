@@ -7,12 +7,12 @@ import collections
 import re
 import matplotlib.pyplot as plt
 
-def save_word2vec(path = "./GoogleNews-vectors-negative300.bin", save_path = "./pre_corpus.pickle"):
+def save_word2vec(path = "./GoogleNews-vectors-negative300.bin"):
 
     model = gensim.models.KeyedVectors.load_word2vec_format(path, binary = True)
 
     word2idx = dict()
-    #Weight = model.vectors.astype("float32")
+    Weight = model.vectors.astype("float32")
     for word in model.vocab:
         word2idx[word] = len(word2idx)
 
@@ -20,8 +20,11 @@ def save_word2vec(path = "./GoogleNews-vectors-negative300.bin", save_path = "./
     #data["Weight"] = Weight
     #data["word2idx"] = word2idx
 
-    with open(save_path, "wb") as f:
+    with open("./pre_corpus.pickle", "wb") as f:
         pickle.dump(word2idx, f, protocol= pickle.HIGHEST_PROTOCOL)
+
+    with open("./pre_weight.pickle", "wb") as f:
+        pickle.dump(Weight, f, protocol = pickle.HIGHEST_PROTOCOL)
 
 def gen_data(data, val_ratio = 0.1):
     np.random.shuffle(data)
@@ -61,3 +64,7 @@ def plot(acc_stack, loss_stack, epochs):
     plt.legend(ax, labels, loc =2)
 
     plt.show()
+
+if __name__ == "__main__":
+    #save_word2vec()
+    print(0)

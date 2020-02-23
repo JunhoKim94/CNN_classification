@@ -5,6 +5,40 @@ from tqdm import tqdm
 import os
 import collections
 import re
+def wordtoalpha(word, subcorpus):
+    print(0)
+
+def make_subwords_corpus(n_grams):
+
+    def make_subword(n_grams):
+        alphabet = [chr(i) for i in range(ord('a'),ord('z')+1)]
+
+        stack = [chr(i) for i in range(ord('a'),ord('z')+1)]
+        while(1):
+            temp = stack.pop(0)
+            if len(temp) >= n_grams:
+                break
+
+            for alpha in alphabet:
+                new_alpha = temp + alpha
+                stack.append(new_alpha)
+
+        return stack
+
+    stack = make_subword(n_grams)
+
+    if n_grams > 1:
+        add_1 = make_subword(n_grams - 1)
+        for al in add_1:
+            stack.append("<" + al)
+            stack.append(al + ">")
+
+        if n_grams > 2:
+            add_2 = make_subword(n_grams - 2)
+            for al in add_2:
+                stack.append("<" + al + ">")
+
+    return stack
 
 def load_word2vec(weight_path, corpus_path, word2idx):
     with open(weight_path, "rb") as f:
