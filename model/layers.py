@@ -23,8 +23,8 @@ class Highway(nn.Module):
     def forward(self, x):
         
         out = self.linear(x)
-        gate = self.gate(x) if self.mode == "highway" else torch.ones(1)
-        print(gate)
+        gate = self.gate(x)
+        gate = torch.sigmoid(gate)
         output = gate * out + (1 - gate) * x
         return output
 

@@ -5,40 +5,7 @@ from tqdm import tqdm
 import os
 import collections
 import re
-def wordtoalpha(word, subcorpus):
-    print(0)
 
-def make_subwords_corpus(n_grams):
-
-    def make_subword(n_grams):
-        alphabet = [chr(i) for i in range(ord('a'),ord('z')+1)]
-
-        stack = [chr(i) for i in range(ord('a'),ord('z')+1)]
-        while(1):
-            temp = stack.pop(0)
-            if len(temp) >= n_grams:
-                break
-
-            for alpha in alphabet:
-                new_alpha = temp + alpha
-                stack.append(new_alpha)
-
-        return stack
-
-    stack = make_subword(n_grams)
-
-    if n_grams > 1:
-        add_1 = make_subword(n_grams - 1)
-        for al in add_1:
-            stack.append("<" + al)
-            stack.append(al + ">")
-
-        if n_grams > 2:
-            add_2 = make_subword(n_grams - 2)
-            for al in add_2:
-                stack.append("<" + al + ">")
-
-    return stack
 
 def load_word2vec(weight_path, corpus_path, word2idx):
     with open(weight_path, "rb") as f:
@@ -69,34 +36,25 @@ def raw_corpus(path):
 
     '''
     collect = collections.Counter()
-    
-    file_path = path
-
-    word_token = []
-    for path in file_path:
-        word = []
-        with open(path, 'r', encoding= 'utf-8') as f:
+    char_vocab = dict()
+    char_vocab["PAD"] = 0
+    word2idx = dict()
+    word2idx["UNK"] = 0
+    for p in path:
+        with open(p, 'r', encoding= 'utf-8') as f:
             lines = f.readlines()
             for line in lines:
                 line = line.strip()
                 line = clean_str(line, True)
-                word += line.split(" ")
-        word_token += word
-        collect.update(word_token)
-    
-    temp = collect.most_common()
-    count = [["UNK", 1]]
-    count.extend(temp)
+                for w in line.split(" "):
+                    if w not in word2idx:
+                        word2idx[w] = len(word2idx)
 
-    word2idx = dict()
-    data = []
-    for word, freq in count:
-        data.append(freq)
-        word2idx[word] = len(word2idx)
-        
-    count = data
+                    for ch in w:
+                        if ch not in char_vocab:
+                            char_vocab[ch] = len(char_vocab)
 
-    return word2idx
+    return word2idx, char_vocab
 
 def batch_words(paths):
     words = []

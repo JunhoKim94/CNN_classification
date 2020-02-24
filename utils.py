@@ -28,6 +28,7 @@ def save_word2vec(path = "./GoogleNews-vectors-negative300.bin"):
 
 def gen_data(data, val_ratio = 0.1):
     np.random.shuffle(data)
+    
     total = len(data)
     temp = int(val_ratio * total)
 
