@@ -15,6 +15,7 @@ class Conv_Classifier(Embedding):
         kernel_window = [h1, h2 .. hN] list of convolution window size(h)
         max_len : max_length of input data batch
         '''
+        
         self.input_ch = input_ch
         self.output_ch = sum([l for i,l in kernel_window])
         self.kernel = kernel_window
@@ -87,7 +88,7 @@ class Conv_LM(Conv_Classifier):
         #(B*S, 1, W, emb)
         out = out.unsqueeze(1)
         #(B * S, output_ch, W-k+1, 1) -->. (B*S,output_ch, W-k+1)
-        output = [F.relu(conv(out)).squeeze(3) for conv in self.conv]
+        output = [F.tanh(conv(out)).squeeze(3) for conv in self.conv]
         #(B * S,output_ch)
         output = [F.max_pool1d(i, i.size(2)).squeeze(2) for i in output]
 
@@ -100,8 +101,10 @@ class Conv_LM(Conv_Classifier):
 
         #seq, batch, hidden
         out, hidden = self.rnn(out, hidden)
+
+        #B, S, Class
+        
         out = out.contiguous().view(batch_size * sen_len, -1)
         out = self.out_linear(out)
-
 
         return out, hidden
