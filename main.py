@@ -11,19 +11,19 @@ print("\n ==============================> Training Start <======================
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-train_type = "multichannel"
-path = ["./data/custrev.neg", "./data/custrev.pos"]
+train_type = "rand"
+path = ["./data/TREC/TREC.train.all"]
 
 
 word2idx, _ = raw_corpus(path)
-Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
-Weight = torch.FloatTensor(Weight).to(device)
-#Weight = None
+#Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
+#Weight = torch.FloatTensor(Weight).to(device)
+Weight = None
 
-words = batch_words(path)
+words, target = recall_word(path)
 words = word_id_gen(words, word2idx)
 
-data, max_len = padding(words)
+data, max_len = padding(words, target)
 
 print(data.shape, len(word2idx), max_len)
 
@@ -40,8 +40,8 @@ vocab_size = len(word2idx)
 total = len(train_data)
 embed_size = 300
 h = [(3,100), (4,100), (5,100)]
-class_num = 2
-ch = 2
+class_num = max(target)
+ch = 1
 batch_size = 50
 learning_rate = 0.001
 epochs = 20

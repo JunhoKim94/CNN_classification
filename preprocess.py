@@ -35,16 +35,15 @@ def raw_corpus(path):
             file_path.append(path + "/" + filename)
 
     '''
-    collect = collections.Counter()
     char_vocab = dict()
     char_vocab["PAD"] = 0
     word2idx = dict()
     word2idx["UNK"] = 0
     for p in path:
-        with open(p, 'r', encoding= 'utf-8') as f:
+        with open(p, 'rt', encoding= 'latin-1') as f:
             lines = f.readlines()
             for line in lines:
-                line = line.strip()
+                line = line[2:].strip()
                 line = clean_str(line, True)
                 for w in line.split(" "):
                     if w not in word2idx:
@@ -67,56 +66,51 @@ def batch_words(paths):
 def recall_word(path):
 
     word = []
-    with open(path, 'r', encoding= 'utf-8') as f:
-        lines = f.readlines()
-        for line in lines:
-            line = line.strip()
-            line = clean_str(line, True)
-            word.append(line.split(" "))
+    target = []
+    for p in path:
+        with open(p, 'rt', encoding= 'latin-1') as f:
+            lines = f.readlines()
+            for line in lines:
+                target.append(int(line[:1]))
+                line = line[2:].strip()
+                line = clean_str(line, True)
+                word.append(line.split(" "))
 
-    return word
+        return word, target
 
 def word_id_gen(words, word2idx):
     '''
-    words : [[class 1(lines)], [class 2(lines)], ...]
+    words : [lines]
     '''
     word_ = []
-    for lines in words:
-        word_id = []
-        for line in tqdm(lines, desc = "Changing Word to Index"):
-            line_id = []
-            for word in line:
-                if word  not in word2idx:
-                    continue
+    for line in tqdm(words, desc = "Changing Word to Index"):
+        line_id = []
+        for word in line:
+            if word not in word2idx:
+                continue
                     #line_id += [word2idx["UNK"]]
-                else:
-                    line_id += [word2idx[word]]
-            word_id.append(line_id)
-        word_.append(word_id)
+            else:
+                line_id += [word2idx[word]]
+        word_.append(line_id)
 
     return word_
 
-def padding(words, PAD = 0):
+def padding(words, target, PAD = 0):
     '''
     전체 데이터에서 max_len
-    words : [[class 1(lines)], [class 2(lines)], ...]
+    words : [lines] , target 
     '''
-    length = []
-    for lines in words:
-        length += [len(s) for s in lines]
+    length = [len(s) for s in words]
     max_len = max(length)
     #words = sorted(words, key=lambda items: length)
 
     train_data = np.zeros((len(length), max_len + 2), dtype = np.int32)
     print(np.mean(length))
-    i = 0
     #zeros padding
-    for label, lines in enumerate(words):
-        for line in lines:
-            train_data[i, :length[i]] = line
-            train_data[i, -1] = label
-            train_data[i, -2] = len(line)
-            i += 1
+    for i, line in enumerate(words):
+        train_data[i, :length[i]] = line
+        train_data[i, -1] = target[i]
+        train_data[i, -2] = length[i]
 
     return train_data, max_len
 
