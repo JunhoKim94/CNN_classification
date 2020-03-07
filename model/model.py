@@ -33,7 +33,8 @@ class Conv_Classifier(Embedding):
 
     def init_weight(self):
         #for layer in self.embedding:
-        #    layer.weight.data.uniform_(-0.01,0.01)
+            #layer.weight.data.uniform_(-0.01,0.01)
+            #layer.weight.data.fill_(0)
         
         for layer in self.conv:
             layer.weight.data.uniform_(-0.01, 0.01)

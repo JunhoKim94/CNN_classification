@@ -76,7 +76,7 @@ def recall_word(path):
                 line = clean_str(line, True)
                 word.append(line.split(" "))
 
-        return word, target
+    return word, target
 
 def word_id_gen(words, word2idx):
     '''
