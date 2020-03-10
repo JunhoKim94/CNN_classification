@@ -74,7 +74,7 @@ class Conv_LM(Conv_Classifier):
         self.out_linear = nn.Linear(self.hidden, self.output)
 
     
-    def forward(self, x, hidden):
+    def forward(self, x):
         '''
         x = (Batch, Sentence(max_len), Word_length)
         '''
@@ -101,11 +101,11 @@ class Conv_LM(Conv_Classifier):
         out = out.view(batch_size, sen_len, -1)
 
         #seq, batch, hidden
-        out, hidden = self.rnn(out, hidden)
+        out, hidden = self.rnn(out)
 
         #B, S, Class
         
         out = out.contiguous().view(batch_size * sen_len, -1)
         out = self.out_linear(out)
 
-        return out, hidden
+        return out

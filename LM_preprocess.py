@@ -5,13 +5,13 @@ import re
 
 def wordtoalpha(word, subcorpus, max_len):
     ret = []
-    ret.append(subcorpus["BOS"])
+    #ret.append(subcorpus["BOS"])
     for ch in word:
         if ch not in subcorpus:
             continue
         ret.append(subcorpus[ch])
 
-    ret.append(subcorpus["EOS"])
+    #ret.append(subcorpus["EOS"])
     while(len(ret) < max_len):
         ret.append(0)
 
@@ -42,8 +42,8 @@ def raw_corpus(path):
                     if ch not in char_vocab:
                         char_vocab[ch] = len(char_vocab)
 
-    char_vocab["BOS"] = len(char_vocab)
-    char_vocab["EOS"] = len(char_vocab)
+    #char_vocab["BOS"] = len(char_vocab)
+    #char_vocab["EOS"] = len(char_vocab)
 
     return word2idx, char_vocab
 
@@ -93,14 +93,13 @@ def wordtoid(words,word2idx,sub_corpus):
         target_id.append(stack)
 
     #Batch x sen x Max_len
-    
-    
     train = np.zeros((batch_size, max_sen , max_len), dtype = np.int32)
     label = np.zeros((batch_size, max_sen + 1), dtype = np.int32)
     for i, sent in enumerate(word_id):
         train[i,:sen_length[i],:] = sent
         label[i,:sen_length[i]] = target_id[i]
         label[i, -1] = sen_length[i]
+
     return train, label
 
 def get_mini(data, label, batch_size):

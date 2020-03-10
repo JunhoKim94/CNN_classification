@@ -26,43 +26,45 @@ val_words, val_target = wordtoid(val_words, word2idx, ch_corpus)
 
 batch_size = 50
 total = len(words)
-epochs = 5
+epochs = 300
 embed = 15
 hidden_size = 300
 h = [(1, 25), (2, 25), (3, 25), (4, 25), (5, 25), (6, 25)]
 lr = 0.001
 drop_out = 0.5
-num_layer = 1
+num_layer = 2
 
 model = Conv_LM(embed, h, len(ch_corpus), hidden_size, len(word2idx), num_layer, drop_out)
-criterion = torch.nn.CrossEntropyLoss(reduction = 'none')
+criterion = torch.nn.CrossEntropyLoss()
+P_cri  = torch.nn.CrossEntropyLoss(reduction = "none")
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
+torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
+scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
 
 model.to(device)
+st = time.time()
 
 for epoch in range(epochs):
     PPL = 0
     epoch_loss = 0
-    st = time.time()
     model.train()
     #hidden = (torch.zeros(1, batch_size, 300).to(device), torch.zeros(1,batch_size,300).to(device))
     for iteration in range(total // batch_size):
         batch_x , batch_y = get_mini(words, target, batch_size)
         length = batch_y.shape[1]
 
-        hidden = (torch.zeros(num_layer, batch_size, hidden_size).to(device), torch.zeros(num_layer,batch_size,hidden_size).to(device))
+        #hidden = (torch.zeros(num_layer, batch_size, hidden_size).to(device), torch.zeros(num_layer,batch_size,hidden_size).to(device))
         batch_x = torch.Tensor(batch_x).to(torch.long).to(device)
         batch_y = torch.Tensor(batch_y).to(torch.long).to(device)
         batch_y = batch_y.view(batch_size * length)
 
-        hidden = [state.detach() for state in hidden]
+        #hidden = [state.detach() for state in hidden]
 
-        y_pred, hidden = model(batch_x, hidden)
+        y_pred = model(batch_x)
 
         loss = criterion(y_pred, batch_y)
-        loss = torch.mean(loss)
+        #loss = torch.mean(loss)
         #loss = torch.mean(torch.exp(loss))# / batch_size
-        print(loss)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -72,20 +74,24 @@ for epoch in range(epochs):
 
     #PPL /= (total//batch_size)
     epoch_loss /= (total // batch_size)
-    
     model.eval()
     val_x, val_y = get_mini(val_words, val_target, batch_size)
     length = val_y.shape[1]
 
-    val_h = (torch.zeros(num_layer,batch_size,hidden_size).to(device), torch.zeros(num_layer,batch_size, hidden_size).to(device))
+    #val_h = (torch.zeros(num_layer,batch_size,hidden_size).to(device), torch.zeros(num_layer,batch_size, hidden_size).to(device))
     val_x = torch.Tensor(val_x).to(torch.long).to(device)
     val_y = torch.Tensor(val_y).to(torch.long).to(device)
     val_y = val_y.view(batch_size * length)
 
-    y_val, val_h = model(val_x, val_h)
-    val_loss = criterion(y_val, val_y)
+    y_val = model(val_x)
+
+    val_loss = P_cri(y_val, val_y)
+    #val_ppl = val_loss
     val_ppl = torch.mean(torch.exp(val_loss))
+    scheduler.step()
+    for param_group in optimizer.param_groups:
+        lr = param_group['lr']
 
-    if (epoch % 1 == 0):
+    if (epoch % 10 == 0):
         print(f"epoch = {epoch} |  Val_PPL = {val_ppl} | epoch loss : {epoch_loss}  |  lr = {lr} | spend time : {time.time() - st}")
-
+        torch.save(model.state_dict(), "./model.pt")
