@@ -11,8 +11,12 @@ print("\n ==============================> Training Start <======================
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-train_type = "rand"
+train_type = "nonstatic"
+
 path = ["./data/TREC/TREC.train.all" , "./data/TREC/TREC.test.all"]
+#path = ["./data/Subj/subj.all"]
+path = ["./data/SST-2/stsa.binary.dev","./data/SST-2/stsa.binary.train","./data/SST-2/stsa.binary.test" ]
+
 
 word2idx, _ = raw_corpus(path)
 Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
@@ -43,7 +47,7 @@ class_num = max(target) + 1
 ch = 1
 batch_size = 50
 learning_rate = 0.001
-epochs = 15
+epochs = 30
 
 #Model
 model = Conv_Classifier(ch, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type, mode = "linear")
@@ -78,7 +82,7 @@ for epoch in range(epochs):
         epoch_loss += loss.item()
     
         
-    scheduler.step()
+    #scheduler.step()
     epoch_loss /= total
     model.eval()
     y_v = F.log_softmax(model(x_val), dim = 1)
@@ -97,5 +101,5 @@ for epoch in range(epochs):
         print(f"epoch = {epoch} | loss = {epoch_loss} | val_score = {score} | lr = {lr} | train_score : {score_train}")
 
 
-plot(acc_stack, loss_stack, epochs)
+#plot(acc_stack, loss_stack, epochs)
 

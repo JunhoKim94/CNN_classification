@@ -39,6 +39,7 @@ class Embedding(nn.Module):
         '''
         self.embed_size = embed
         self.vocab_size = vocab_size
+        self.train_type = train_type
 
         self.embedding = nn.ModuleList()
         if train_type.lower() == "rand":

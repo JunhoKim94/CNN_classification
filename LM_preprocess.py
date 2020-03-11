@@ -5,13 +5,13 @@ import re
 
 def wordtoalpha(word, subcorpus, max_len):
     ret = []
-    #ret.append(subcorpus["BOS"])
+    ret.append(subcorpus["BOS"])
     for ch in word:
         if ch not in subcorpus:
             continue
         ret.append(subcorpus[ch])
 
-    #ret.append(subcorpus["EOS"])
+    ret.append(subcorpus["EOS"])
     while(len(ret) < max_len):
         ret.append(0)
 

@@ -20,6 +20,7 @@ class Conv_Classifier(Embedding):
         self.output_ch = sum([l for i,l in kernel_window])
         self.kernel = kernel_window
         self.out = out
+        self.dropout_ = drop_out
 
         #(B,C,X,Y) 가 인풋
         self.conv = nn.ModuleList([nn.Conv2d(self.input_ch, output, (h, self.embed_size), padding = (h-1,0)) for h,output in self.kernel])
@@ -28,13 +29,9 @@ class Conv_Classifier(Embedding):
             self.linear = Highway(self.output_ch)
         else:
             self.linear = nn.Linear(self.output_ch , self.out)
-        self.dropout = nn.Dropout(drop_out)
-
+        self.dropout = nn.Dropout(self.dropout_)
 
     def init_weight(self):
-        #for layer in self.embedding:
-            #layer.weight.data.uniform_(-0.01,0.01)
-            #layer.weight.data.fill_(0)
         
         for layer in self.conv:
             layer.weight.data.uniform_(-0.01, 0.01)
@@ -50,6 +47,7 @@ class Conv_Classifier(Embedding):
         #(B,ch, S, embed_size)
         out = [layer(x) for layer in self.embedding]
         out = torch.cat(out, dim = 1)
+        #out = F.dropout(out, self.dropout)
         #(B, output_ch, S-k+1, 1) -->. (B,output_ch, S-k+1)
         output = [F.relu(conv(out)).squeeze(3) for conv in self.conv]
         #(B,output_ch)
@@ -59,6 +57,7 @@ class Conv_Classifier(Embedding):
         out = torch.cat(output, dim = 1)
         out = self.dropout(out)
         out = self.linear(out)
+        
             
 
         return out
@@ -74,6 +73,12 @@ class Conv_LM(Conv_Classifier):
         self.out_linear = nn.Linear(self.hidden, self.output)
 
     
+    def initialize(self):
+        self.rnn.weight.data.uniform_(-0.01, 0.01)
+        self.rnn.bias.data.fill_(0)
+        self.out_linear.weight.data.uniform_(-0.01, 0.01)
+        self.out_linear.bias.data.fill_(0)
+
     def forward(self, x):
         '''
         x = (Batch, Sentence(max_len), Word_length)

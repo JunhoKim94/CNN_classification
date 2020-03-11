@@ -31,6 +31,7 @@ def gen_data(data, val_ratio = 0.1):
     
     total = len(data)
     temp = int(val_ratio * total)
+    seed = np.random.choice(total, temp)
 
     train_data = data[temp:, :]
     val_data = data[:temp,:]
@@ -38,10 +39,12 @@ def gen_data(data, val_ratio = 0.1):
     return train_data, val_data
 
 def get_mini(data, batch_size):
-    seed = np.random.choice(len(data), batch_size, replace = False)
+    seed = np.random.choice(len(data), batch_size)
 
     length = data[seed, -2]
     max_length = max(length)
+    #if max_length > 20:
+    #    max_length = 20
 
     train_data = data[seed, :max_length]
     target = data[seed, -1]
