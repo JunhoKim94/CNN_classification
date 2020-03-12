@@ -47,7 +47,7 @@ class_num = max(target) + 1
 ch = 1
 batch_size = 50
 learning_rate = 0.001
-epochs = 30
+epochs = 10
 
 #Model
 model = Conv_Classifier(ch, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type, mode = "linear")

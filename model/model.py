@@ -34,10 +34,12 @@ class Conv_Classifier(Embedding):
     def init_weight(self):
         
         for layer in self.conv:
-            layer.weight.data.uniform_(-0.01, 0.01)
+            #layer.weight.data.uniform_(-0.01, 0.01)
             #torch.nn.init.kaiming_uniform_(layer.weight)
-        self.linear.weight.data.uniform_(-0.01, 0.01)
-        #torch.nn.init.kaiming_uniform_(self.linear.weight)
+            torch.nn.init.kaiming_normal_(layer.weight)
+        #self.linear.weight.data.uniform_(-0.01, 0.01)
+        #torch.nn.init.xavier_uniform_(self.linear.weight)
+        torch.nn.init.xavier_normal_(self.linear.weight)
         self.linear.bias.data.fill_(0)
         
     def forward(self, x):
