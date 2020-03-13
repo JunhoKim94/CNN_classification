@@ -5,13 +5,11 @@ import re
 
 def wordtoalpha(word, subcorpus, max_len):
     ret = []
-    ret.append(subcorpus["BOS"])
     for ch in word:
         if ch not in subcorpus:
             continue
         ret.append(subcorpus[ch])
 
-    ret.append(subcorpus["EOS"])
     while(len(ret) < max_len):
         ret.append(0)
 
@@ -29,6 +27,8 @@ def raw_corpus(path):
     char_vocab["PAD"] = 0
     word2idx = dict()
     word2idx["<unk>"] = 0
+    word2idx["<BOS>"] = 1
+    word2idx["<EOS>"] = 2
     with open(path, 'r', encoding= 'utf-8') as f:
         lines = f.readlines()
         for line in lines:
@@ -42,8 +42,6 @@ def raw_corpus(path):
                     if ch not in char_vocab:
                         char_vocab[ch] = len(char_vocab)
 
-    #char_vocab["BOS"] = len(char_vocab)
-    #char_vocab["EOS"] = len(char_vocab)
 
     return word2idx, char_vocab
 
@@ -63,7 +61,10 @@ def recall_word(path):
         for line in lines:
             line = line.strip()
             #line = clean_str(line, True)
-            word.append(line.split(" "))
+            temp = ["<BOS>"]
+            temp += line.split(" ")
+            temp += ["<EOS>"]
+            word.append(temp)
 
     return word
 
@@ -73,7 +74,7 @@ def wordtoid(words,word2idx,sub_corpus):
     '''
     
     length = [len(k) for k in word2idx.keys()]
-    max_len = max(length) + 2
+    max_len = max(length)
     sen_length = [len(sen) for sen in words]
     max_sen = max(sen_length)
     batch_size = len(words)

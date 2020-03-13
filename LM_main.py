@@ -24,6 +24,8 @@ words, target = wordtoid(words, word2idx, ch_corpus)
 val_words = recall_word(val_path)
 val_words, val_target = wordtoid(val_words, word2idx, ch_corpus)
 
+print(val_words.shape)
+
 batch_size = 50
 total = len(words)
 epochs = 300
@@ -38,7 +40,7 @@ model = Conv_LM(embed, h, len(ch_corpus), hidden_size, len(word2idx), num_layer,
 criterion = torch.nn.CrossEntropyLoss()
 P_cri  = torch.nn.CrossEntropyLoss(reduction = "none")
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
-torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
+torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
 
 model.to(device)
@@ -85,13 +87,13 @@ for epoch in range(epochs):
 
     y_val = model(val_x)
 
-    val_loss = P_cri(y_val, val_y)
-    #val_ppl = val_loss
-    val_ppl = torch.mean(torch.exp(val_loss))
+    val_loss = criterion(y_val, val_y)
+    #val_ppl = torch.mean(torch.exp(val_loss))
+    val_ppl = torch.exp(val_loss * batch_size) / batch_size
     scheduler.step()
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
 
-    if (epoch % 10 == 0):
+    if (epoch % 2 == 0):
         print(f"epoch = {epoch} |  Val_PPL = {val_ppl} | epoch loss : {epoch_loss}  |  lr = {lr} | spend time : {time.time() - st}")
         torch.save(model.state_dict(), "./model.pt")

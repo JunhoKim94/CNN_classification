@@ -76,9 +76,9 @@ class Conv_LM(Conv_Classifier):
 
     
     def initialize(self):
-        self.rnn.weight.data.uniform_(-0.01, 0.01)
+        self.rnn.weight.data.uniform_(-0.05, 0.05)
         self.rnn.bias.data.fill_(0)
-        self.out_linear.weight.data.uniform_(-0.01, 0.01)
+        self.out_linear.weight.data.uniform_(-0.05, 0.05)
         self.out_linear.bias.data.fill_(0)
 
     def forward(self, x):
@@ -88,7 +88,7 @@ class Conv_LM(Conv_Classifier):
         word_len = x.size(2)
         sen_len = x.size(1)
         batch_size = x.size(0)
-        #(B,S,W)
+        #(B * S,W)
         x = x.view(-1, word_len)
         out = [layer(x) for layer in self.embedding]
         #(B * S, W, emb)
