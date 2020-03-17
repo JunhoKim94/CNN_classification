@@ -28,7 +28,7 @@ print(val_words.shape)
 
 batch_size = 50
 total = len(words)
-epochs = 300
+epochs = 50
 embed = 15
 hidden_size = 300
 h = [(1, 25), (2, 25), (3, 25), (4, 25), (5, 25), (6, 25)]
@@ -45,6 +45,29 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lam
 
 model.to(device)
 st = time.time()
+
+def evaluate(val_words, val_target, model):
+    ppl = torch.nn.CrossEntropyLoss()
+    model.eval()
+
+    total = 0
+    for i in range(len(val_words)):
+        seq = val_target[i, -1]
+        val_x, val_y = val_words[i, :(seq - 1)], val_target[i, 1:seq]
+
+        val_x = torch.Tensor([val_x]).to(torch.long).to(device)
+        val_y = torch.Tensor(val_y).to(torch.long).to(device)
+        #print(val_x.shape, val_y.shape)
+
+        #val_y = val_y.view(seq)
+        pred = model(val_x)
+        loss = ppl(pred, val_y)
+
+        total += torch.exp(loss).item()
+
+    total /= len(val_words)
+
+    return total
 
 for epoch in range(epochs):
     PPL = 0
@@ -73,9 +96,10 @@ for epoch in range(epochs):
         epoch_loss += loss.item()
         #PPL += torch.exp(loss.data)
         
-
+    
     #PPL /= (total//batch_size)
     epoch_loss /= (total // batch_size)
+    '''
     model.eval()
     val_x, val_y = get_mini(val_words, val_target, batch_size)
     length = val_y.shape[1]
@@ -87,13 +111,22 @@ for epoch in range(epochs):
 
     y_val = model(val_x)
 
-    val_loss = criterion(y_val, val_y)
-    #val_ppl = torch.mean(torch.exp(val_loss))
-    val_ppl = torch.exp(val_loss * batch_size) / batch_size
+    val_loss = P_cri(y_val, val_y)
+    print(val_loss.shape)
+    val_loss = val_loss.view(batch_size, length)
+    print(val_loss.shape)
+    val_loss = torch.exp(torch.mean(val_loss, dim = 1))
+    print(val_loss.shape)
+    val_loss = torch.mean(val_loss)
+    '''
+    val_loss = evaluate(val_words, val_target, model)
+
+
     scheduler.step()
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
 
     if (epoch % 2 == 0):
-        print(f"epoch = {epoch} |  Val_PPL = {val_ppl} | epoch loss : {epoch_loss}  |  lr = {lr} | spend time : {time.time() - st}")
+        print(f"epoch = {epoch} |  Val_PPL = {val_loss} | epoch loss : {epoch_loss}  |  lr = {lr} | spend time : {time.time() - st}")
         torch.save(model.state_dict(), "./model.pt")
+

@@ -14,9 +14,9 @@ class Highway(nn.Module):
         self.gate = nn.Linear(input_dims, input_dims)
 
     def initialize(self):
-        #self.linear.weight.data.uniform_(-0.01, 0.01)
-        torch.nn.init.kaiming_uniform_(self.linear.weight)
-        #self.linear.bias.data.fill_(0)
+        self.linear.weight.data.uniform_(-0.05, 0.05)
+        #torch.nn.init.kaiming_uniform_(self.linear.weight)
+        self.linear.bias.data.fill_(0)
         #self.gate.weight.data.uniform_(-0.01,0.01)
         #self.gate.bias.data.fill_(0)
         

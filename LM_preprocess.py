@@ -33,7 +33,7 @@ def raw_corpus(path):
         lines = f.readlines()
         for line in lines:
             line = line.strip()
-            #line = clean_str(line, True)
+            line = clean_str(line, True)
             for w in line.split(" "):
                 if w not in word2idx:
                     word2idx[w] = len(word2idx)
@@ -60,7 +60,7 @@ def recall_word(path):
         lines = f.readlines()
         for line in lines:
             line = line.strip()
-            #line = clean_str(line, True)
+            line = clean_str(line, True)
             temp = ["<BOS>"]
             temp += line.split(" ")
             temp += ["<EOS>"]

@@ -31,16 +31,19 @@ class Conv_Classifier(Embedding):
             self.linear = nn.Linear(self.output_ch , self.out)
         self.dropout = nn.Dropout(self.dropout_)
 
+        #self.init_weight()
+
     def init_weight(self):
         
         for layer in self.conv:
-            #layer.weight.data.uniform_(-0.01, 0.01)
+            layer.weight.data.uniform_(-0.05, 0.05)
             #torch.nn.init.kaiming_uniform_(layer.weight)
-            torch.nn.init.kaiming_normal_(layer.weight)
-        #self.linear.weight.data.uniform_(-0.01, 0.01)
+            #torch.nn.init.kaiming_normal_(layer.weight)
+        #self.linear.weight.data.uniform_(-0.05, 0.05)
         #torch.nn.init.xavier_uniform_(self.linear.weight)
-        torch.nn.init.xavier_normal_(self.linear.weight)
-        self.linear.bias.data.fill_(0)
+        #torch.nn.init.xavier_normal_(self.linear.weight)
+        #self.linear.bias.data.fill_(0)
+        self.linear.initialize()
         
     def forward(self, x):
         '''
@@ -60,8 +63,6 @@ class Conv_Classifier(Embedding):
         out = self.dropout(out)
         out = self.linear(out)
         
-            
-
         return out
 
 class Conv_LM(Conv_Classifier):
@@ -74,10 +75,10 @@ class Conv_LM(Conv_Classifier):
         self.rnn = nn.LSTM(self.input, hidden, num_layers, dropout = dropout, bias = True, batch_first = True)
         self.out_linear = nn.Linear(self.hidden, self.output)
 
-    
+        #self.initialize()
     def initialize(self):
-        self.rnn.weight.data.uniform_(-0.05, 0.05)
-        self.rnn.bias.data.fill_(0)
+        #self.rnn.weight.data.uniform_(-0.05, 0.05)
+        #self.rnn.bias.data.fill_(0)
         self.out_linear.weight.data.uniform_(-0.05, 0.05)
         self.out_linear.bias.data.fill_(0)
 
