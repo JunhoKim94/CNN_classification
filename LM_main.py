@@ -47,27 +47,47 @@ model.to(device)
 st = time.time()
 
 def evaluate(val_words, val_target, model):
-    ppl = torch.nn.CrossEntropyLoss()
+    ppl = torch.nn.CrossEntropyLoss(reduction = 'none')
     model.eval()
+    batch = 1
 
     total = 0
-    for i in range(len(val_words)):
+    for i in range(len(val_words) // batch):
+        length = val_target[i * batch : (i+1) * batch, -1]
+        max_length = max(length)
+        #if max_length > 20:
+        #    max_length = 20
+
+        val_x = val_words[i * batch : (i + 1) * batch,  :(max_length - 1)]
+        val_y = val_target[i * batch : (i + 1) * batch, 1 :max_length]
+
+        '''
         seq = val_target[i, -1]
         val_x, val_y = val_words[i, :(seq - 1)], val_target[i, 1:seq]
+        '''
+        
 
-        val_x = torch.Tensor([val_x]).to(torch.long).to(device)
+        val_x = torch.Tensor(val_x).to(torch.long).to(device)
         val_y = torch.Tensor(val_y).to(torch.long).to(device)
-        #print(val_x.shape, val_y.shape)
 
-        #val_y = val_y.view(seq)
+        length = val_y.shape[1]
+
+        val_y = val_y.view(batch * length)
+
         pred = model(val_x)
-        loss = ppl(pred, val_y)
+        val_loss = ppl(pred, val_y)
+        val_loss = val_loss.view(batch, length)
+        val_loss = torch.sum(torch.exp(torch.mean(val_loss, dim = 1)))
 
-        total += torch.exp(loss).item()
+        total += val_loss.item()
 
     total /= len(val_words)
 
     return total
+
+#val_loss = evaluate(val_words, val_target, model)
+
+
 
 for epoch in range(epochs):
     PPL = 0
