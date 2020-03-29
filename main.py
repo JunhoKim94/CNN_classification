@@ -11,12 +11,12 @@ print("\n ==============================> Training Start <======================
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-train_type = "nonstatic"
+train_type = "multichannel"
 
 path = ["./data/TREC/TREC.train.all" , "./data/TREC/TREC.test.all"]
 #path = ["./data/Subj/subj.all"]
 path = ["./data/SST-2/stsa.binary.dev","./data/SST-2/stsa.binary.train","./data/SST-2/stsa.binary.test" ]
-
+path = ["./data/SST-1/stsa.fine.dev", "./data/SST-1/stsa.fine.train"]
 
 word2idx, _ = raw_corpus(path)
 Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
@@ -27,11 +27,20 @@ words, target = recall_word(path)
 words = word_id_gen(words, word2idx)
 
 data, max_len = padding(words, target)
-
 print(data.shape, len(word2idx), max_len)
-train_data, val_data = gen_data(data, val_ratio = 0.1)
 
-x_val, y_val = get_mini(val_data, len(val_data))
+test_words , test_target = recall_word(["./data/SST-1/stsa.fine.test"])
+test_words = word_id_gen(test_words, word2idx)
+test_words, _ = padding(test_words, test_target)
+test_words, _ = gen_data(test_words, val_ratio= 0)
+
+x_val , y_val = get_mini(test_words, len(test_words))
+
+print(x_val.shape , y_val.shape)
+
+train_data, val_data = gen_data(data, val_ratio = 0)
+
+#x_val, y_val = get_mini(val_data, len(val_data))
 print(len(train_data), len(val_data))
 
 x_val = torch.tensor(x_val).to(torch.long).to(device)
@@ -44,7 +53,7 @@ total = len(train_data)
 embed_size = 300
 h = [(3,100), (4,100), (5,100)]
 class_num = max(target) + 1
-ch = 1
+ch = 2
 batch_size = 50
 learning_rate = 0.001
 epochs = 10

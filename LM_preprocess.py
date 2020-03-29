@@ -4,12 +4,12 @@ from tqdm import tqdm
 import re
 
 def wordtoalpha(word, subcorpus, max_len):
-    ret = []
+    ret = [subcorpus["<BOS>"]]
     for ch in word:
         if ch not in subcorpus:
             continue
         ret.append(subcorpus[ch])
-
+    ret.append(subcorpus["<EOS>"])
     while(len(ret) < max_len):
         ret.append(0)
 
@@ -24,11 +24,15 @@ def raw_corpus(path):
 
     '''
     char_vocab = dict()
-    char_vocab["PAD"] = 0
+    char_vocab["<PAD>"] = 0
     word2idx = dict()
-    word2idx["<unk>"] = 0
-    word2idx["<BOS>"] = 1
-    word2idx["<EOS>"] = 2
+    word2idx["<unk>"] = len(word2idx)
+    word2idx["<BOS>"] = len(word2idx)
+    word2idx["<EOS>"] = len(word2idx)
+    
+    char_vocab["<BOS>"] = len(char_vocab)
+    char_vocab["<EOS>"] = len(char_vocab)
+    
     with open(path, 'r', encoding= 'utf-8') as f:
         lines = f.readlines()
         for line in lines:
@@ -41,7 +45,7 @@ def raw_corpus(path):
                 for ch in w:
                     if ch not in char_vocab:
                         char_vocab[ch] = len(char_vocab)
-
+    
 
     return word2idx, char_vocab
 
@@ -74,7 +78,7 @@ def wordtoid(words,word2idx,sub_corpus):
     '''
     
     length = [len(k) for k in word2idx.keys()]
-    max_len = max(length)
+    max_len = max(length) + 2
     sen_length = [len(sen) for sen in words]
     max_sen = max(sen_length)
     batch_size = len(words)
@@ -97,22 +101,26 @@ def wordtoid(words,word2idx,sub_corpus):
     train = np.zeros((batch_size, max_sen , max_len), dtype = np.int32)
     label = np.zeros((batch_size, max_sen + 1), dtype = np.int32)
     for i, sent in enumerate(word_id):
+        #print(sent)
         train[i,:sen_length[i],:] = sent
         label[i,:sen_length[i]] = target_id[i]
         label[i, -1] = sen_length[i]
 
     return train, label
 
-def get_mini(data, label, batch_size):
+def get_mini(data, label, batch_size, iteration):
     #data = data[:batch_size *len(data)//batch_size]
     #label = label[:batch_size * len(label) // batch_size]
-    seed = np.random.choice(len(data), batch_size, replace = False)
+    #seed = np.random.choice(len(data), batch_size, replace = False)
 
-    length = label[seed, -1]
+    length = label[iteration * batch_size : (iteration + 1) * batch_size, -1]
     max_length = max(length)
 
-    train_data = data[seed, :(max_length - 1)]
-    target = label[seed, 1 :max_length]
+    #train_data = data[seed, :(max_length - 1)]
+    #target = label[seed, 1 :max_length]
+
+    train_data = data[ iteration * batch_size : (iteration + 1) * batch_size , :(max_length - 1)]
+    target = label[iteration * batch_size : (iteration + 1) * batch_size , 1:max_length]
 
     return train_data, target
 

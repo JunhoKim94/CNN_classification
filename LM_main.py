@@ -26,19 +26,24 @@ val_words, val_target = wordtoid(val_words, word2idx, ch_corpus)
 
 print(val_words.shape)
 
-batch_size = 50
+test_words = recall_word(test_path)
+test_words, test_target = wordtoid(test_words, word2idx, ch_corpus)
+
+print(test_words.shape)
+
+batch_size = 20
 total = len(words)
 epochs = 50
 embed = 15
-hidden_size = 300
-h = [(1, 25), (2, 25), (3, 25), (4, 25), (5, 25), (6, 25)]
+hidden_size = 200
+#h = [(1, 25), (2, 25), (3, 25), (4, 25), (5, 25), (6, 25)]
+h = [(i, 25 * i) for i in range(1,7)]
 lr = 0.001
 drop_out = 0.5
 num_layer = 2
 
 model = Conv_LM(embed, h, len(ch_corpus), hidden_size, len(word2idx), num_layer, drop_out)
 criterion = torch.nn.CrossEntropyLoss()
-P_cri  = torch.nn.CrossEntropyLoss(reduction = "none")
 optimizer = torch.optim.Adam(model.parameters(), lr = lr)
 torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
@@ -47,25 +52,14 @@ model.to(device)
 st = time.time()
 
 def evaluate(val_words, val_target, model):
-    ppl = torch.nn.CrossEntropyLoss(reduction = 'none')
+    ppl = torch.nn.CrossEntropyLoss(reduction = 'none', ignore_index = 0)
     model.eval()
     batch = 1
 
     total = 0
     for i in range(len(val_words) // batch):
-        length = val_target[i * batch : (i+1) * batch, -1]
-        max_length = max(length)
-        #if max_length > 20:
-        #    max_length = 20
 
-        val_x = val_words[i * batch : (i + 1) * batch,  :(max_length - 1)]
-        val_y = val_target[i * batch : (i + 1) * batch, 1 :max_length]
-
-        '''
-        seq = val_target[i, -1]
-        val_x, val_y = val_words[i, :(seq - 1)], val_target[i, 1:seq]
-        '''
-        
+        val_x , val_y = get_mini(val_words, val_target, batch, i)
 
         val_x = torch.Tensor(val_x).to(torch.long).to(device)
         val_y = torch.Tensor(val_y).to(torch.long).to(device)
@@ -87,58 +81,29 @@ def evaluate(val_words, val_target, model):
 
 #val_loss = evaluate(val_words, val_target, model)
 
-
-
 for epoch in range(epochs):
     PPL = 0
     epoch_loss = 0
     model.train()
-    #hidden = (torch.zeros(1, batch_size, 300).to(device), torch.zeros(1,batch_size,300).to(device))
     for iteration in range(total // batch_size):
-        batch_x , batch_y = get_mini(words, target, batch_size)
+        batch_x , batch_y = get_mini(words, target, batch_size, iteration)
         length = batch_y.shape[1]
 
-        #hidden = (torch.zeros(num_layer, batch_size, hidden_size).to(device), torch.zeros(num_layer,batch_size,hidden_size).to(device))
         batch_x = torch.Tensor(batch_x).to(torch.long).to(device)
         batch_y = torch.Tensor(batch_y).to(torch.long).to(device)
         batch_y = batch_y.view(batch_size * length)
 
-        #hidden = [state.detach() for state in hidden]
-
         y_pred = model(batch_x)
 
         loss = criterion(y_pred, batch_y)
-        #loss = torch.mean(loss)
-        #loss = torch.mean(torch.exp(loss))# / batch_size
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         epoch_loss += loss.item()
-        #PPL += torch.exp(loss.data)
-        
     
     #PPL /= (total//batch_size)
     epoch_loss /= (total // batch_size)
-    '''
-    model.eval()
-    val_x, val_y = get_mini(val_words, val_target, batch_size)
-    length = val_y.shape[1]
 
-    #val_h = (torch.zeros(num_layer,batch_size,hidden_size).to(device), torch.zeros(num_layer,batch_size, hidden_size).to(device))
-    val_x = torch.Tensor(val_x).to(torch.long).to(device)
-    val_y = torch.Tensor(val_y).to(torch.long).to(device)
-    val_y = val_y.view(batch_size * length)
-
-    y_val = model(val_x)
-
-    val_loss = P_cri(y_val, val_y)
-    print(val_loss.shape)
-    val_loss = val_loss.view(batch_size, length)
-    print(val_loss.shape)
-    val_loss = torch.exp(torch.mean(val_loss, dim = 1))
-    print(val_loss.shape)
-    val_loss = torch.mean(val_loss)
-    '''
     val_loss = evaluate(val_words, val_target, model)
 
 
@@ -147,6 +112,7 @@ for epoch in range(epochs):
         lr = param_group['lr']
 
     if (epoch % 2 == 0):
-        print(f"epoch = {epoch} |  Val_PPL = {val_loss} | epoch loss : {epoch_loss}  |  lr = {lr} | spend time : {time.time() - st}")
+        test_loss = evaluate(test_words, test_target, model)
+        print(f"epoch = {epoch} |  Val_PPL = {val_loss} | epoch loss : {epoch_loss}  |  lr = {lr} | spend time : {time.time() - st}  |  test_PPL = {test_loss}")
         torch.save(model.state_dict(), "./model.pt")
 

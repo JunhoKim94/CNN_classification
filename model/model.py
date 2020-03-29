@@ -21,9 +21,10 @@ class Conv_Classifier(Embedding):
         self.kernel = kernel_window
         self.out = out
         self.dropout_ = drop_out
+        self.mode = mode
 
         #(B,C,X,Y) 가 인풋
-        self.conv = nn.ModuleList([nn.Conv2d(self.input_ch, output, (h, self.embed_size), padding = (h-1,0)) for h,output in self.kernel])
+        self.conv = nn.ModuleList([nn.Conv2d(self.input_ch, output, (h, self.embed_size)) for h,output in self.kernel])
         
         if mode.lower() == "highway":
             self.linear = Highway(self.output_ch)
@@ -31,19 +32,17 @@ class Conv_Classifier(Embedding):
             self.linear = nn.Linear(self.output_ch , self.out)
         self.dropout = nn.Dropout(self.dropout_)
 
-        #self.init_weight()
+        self.init_weight()
 
     def init_weight(self):
-        
         for layer in self.conv:
-            layer.weight.data.uniform_(-0.05, 0.05)
-            #torch.nn.init.kaiming_uniform_(layer.weight)
-            #torch.nn.init.kaiming_normal_(layer.weight)
-        #self.linear.weight.data.uniform_(-0.05, 0.05)
-        #torch.nn.init.xavier_uniform_(self.linear.weight)
-        #torch.nn.init.xavier_normal_(self.linear.weight)
-        #self.linear.bias.data.fill_(0)
-        self.linear.initialize()
+            layer.weight.data.uniform_(-0.01, 0.01)
+
+        if self.mode.lower() == "highway":
+            self.linear.initialize()
+        else:
+            self.linear.weight.data.uniform_(-0.01, 0.01)
+            self.linear.bias.data.fill_(0)
         
     def forward(self, x):
         '''
@@ -52,7 +51,7 @@ class Conv_Classifier(Embedding):
         #(B,ch, S, embed_size)
         out = [layer(x) for layer in self.embedding]
         out = torch.cat(out, dim = 1)
-        #out = F.dropout(out, self.dropout)
+        #out = F.dropout(out, self.dropout_)
         #(B, output_ch, S-k+1, 1) -->. (B,output_ch, S-k+1)
         output = [F.relu(conv(out)).squeeze(3) for conv in self.conv]
         #(B,output_ch)
@@ -76,6 +75,7 @@ class Conv_LM(Conv_Classifier):
         self.out_linear = nn.Linear(self.hidden, self.output)
 
         #self.initialize()
+
     def initialize(self):
         #self.rnn.weight.data.uniform_(-0.05, 0.05)
         #self.rnn.bias.data.fill_(0)
@@ -112,7 +112,6 @@ class Conv_LM(Conv_Classifier):
         out, hidden = self.rnn(out)
 
         #B, S, Class
-        
         out = out.contiguous().view(batch_size * sen_len, -1)
         out = self.out_linear(out)
 

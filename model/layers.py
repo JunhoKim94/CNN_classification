@@ -6,10 +6,6 @@ import torch.nn as nn
 class Highway(nn.Module):
     def __init__(self, input_dims):
         super(Highway, self).__init__()
-        '''
-        mode = linear : normal MLP
-               highway : highway Network
-        '''
         self.linear = nn.Linear(input_dims, input_dims)
         self.gate = nn.Linear(input_dims, input_dims)
 
@@ -44,7 +40,7 @@ class Embedding(nn.Module):
         self.embedding = nn.ModuleList()
         if train_type.lower() == "rand":
             self.embedding.append(nn.Embedding(self.vocab_size, self.embed_size, padding_idx = padding_idx))
-
+            self.embedding[0].weight.data.fill_(0)
         elif train_type.lower() == "static":
             emb = nn.Embedding(self.vocab_size, self.embed_size, _weight = pre_weight, padding_idx = padding_idx)
             #emb.weight.data = nn.Parameter(pre_weight)
@@ -64,6 +60,7 @@ class Embedding(nn.Module):
                 params.requires_grad = False
             self.embedding.append(nn.Embedding(self.vocab_size, self.embed_size, padding_idx = padding_idx))
             self.embedding.append(emb)
+            self.embedding[0].weight.data.fill_(0)
             
         else:
             print(f"please write right train_type")

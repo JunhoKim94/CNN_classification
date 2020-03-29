@@ -43,8 +43,6 @@ def get_mini(data, batch_size):
 
     length = data[seed, -2]
     max_length = max(length)
-    #if max_length > 20:
-    #    max_length = 20
 
     train_data = data[seed, :max_length]
     target = data[seed, -1]
