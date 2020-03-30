@@ -31,22 +31,25 @@ test_words, test_target = wordtoid(test_words, word2idx, ch_corpus)
 
 print(test_words.shape)
 
-batch_size = 20
+batch_size = 25
 total = len(words)
-epochs = 50
+epochs = 250
 embed = 15
-hidden_size = 200
+hidden_size = 300
 #h = [(1, 25), (2, 25), (3, 25), (4, 25), (5, 25), (6, 25)]
 h = [(i, 25 * i) for i in range(1,7)]
-lr = 0.001
+lr = 0.025
 drop_out = 0.5
 num_layer = 2
 
 model = Conv_LM(embed, h, len(ch_corpus), hidden_size, len(word2idx), num_layer, drop_out)
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr = lr)
-torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
+optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay = 1e-3)
+torch.nn.utils.clip_grad_norm_(model.parameters(), 7)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
+
+model.load_state_dict(torch.load("./model.pt"))
+model.train()
 
 model.to(device)
 st = time.time()
@@ -80,6 +83,8 @@ def evaluate(val_words, val_target, model):
     return total
 
 #val_loss = evaluate(val_words, val_target, model)
+#max_length = 30
+
 
 for epoch in range(epochs):
     PPL = 0

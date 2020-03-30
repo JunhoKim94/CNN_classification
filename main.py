@@ -7,16 +7,16 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from utils import *
 
-print("\n ==============================> Training Start <=============================")
+print("\n" + "=" * 20 + "> Training Start < " + "=" * 20)
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-train_type = "multichannel"
+train_type = "rand"
 
 path = ["./data/TREC/TREC.train.all" , "./data/TREC/TREC.test.all"]
 #path = ["./data/Subj/subj.all"]
-path = ["./data/SST-2/stsa.binary.dev","./data/SST-2/stsa.binary.train","./data/SST-2/stsa.binary.test" ]
-path = ["./data/SST-1/stsa.fine.dev", "./data/SST-1/stsa.fine.train"]
+#path = ["./data/SST-2/stsa.binary.dev","./data/SST-2/stsa.binary.train","./data/SST-2/stsa.binary.test" ]
+#path = ["./data/SST-1/stsa.fine.dev", "./data/SST-1/stsa.fine.train", "./data/SST-1/stsa.fine.test"]
 
 word2idx, _ = raw_corpus(path)
 Weight, word2idx = load_word2vec("./preweight.pickle", "pre_corpus.pickle", word2idx)
@@ -29,7 +29,8 @@ words = word_id_gen(words, word2idx)
 data, max_len = padding(words, target)
 print(data.shape, len(word2idx), max_len)
 
-test_words , test_target = recall_word(["./data/SST-1/stsa.fine.test"])
+'''
+test_words , test_target = recall_word(["./data/SST-2/stsa.binary.test"])
 test_words = word_id_gen(test_words, word2idx)
 test_words, _ = padding(test_words, test_target)
 test_words, _ = gen_data(test_words, val_ratio= 0)
@@ -37,10 +38,10 @@ test_words, _ = gen_data(test_words, val_ratio= 0)
 x_val , y_val = get_mini(test_words, len(test_words))
 
 print(x_val.shape , y_val.shape)
+'''
+train_data, val_data = gen_data(data, val_ratio = 0.1)
 
-train_data, val_data = gen_data(data, val_ratio = 0)
-
-#x_val, y_val = get_mini(val_data, len(val_data))
+x_val, y_val = get_mini(val_data, len(val_data))
 print(len(train_data), len(val_data))
 
 x_val = torch.tensor(x_val).to(torch.long).to(device)
@@ -53,15 +54,15 @@ total = len(train_data)
 embed_size = 300
 h = [(3,100), (4,100), (5,100)]
 class_num = max(target) + 1
-ch = 2
+ch = 1
 batch_size = 50
 learning_rate = 0.001
-epochs = 10
+epochs = 15
 
 #Model
 model = Conv_Classifier(ch, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type, mode = "linear")
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = 1e-3)
 torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
 #torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
@@ -84,14 +85,20 @@ for epoch in range(epochs):
 
         optimizer.zero_grad()
         loss = criterion(y_pred, y_train)
-
+        '''
+        l2 = torch.Tensor([0])
+        for w in model.parameters():
+            l2 += torch.norm(w, p = 2)
+        
+        loss = loss + lamb * l2
+        '''
         loss.backward()
         optimizer.step()
 
         epoch_loss += loss.item()
     
         
-    #scheduler.step()
+    scheduler.step()
     epoch_loss /= total
     model.eval()
     y_v = F.log_softmax(model(x_val), dim = 1)
