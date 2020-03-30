@@ -63,7 +63,6 @@ epochs = 15
 model = Conv_Classifier(ch, class_num , embed_size, h, vocab_size, Weight, drop_out =  0.5, train_type = train_type, mode = "linear")
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = 1e-3)
-torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
 #torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
 
@@ -93,6 +92,8 @@ for epoch in range(epochs):
         loss = loss + lamb * l2
         '''
         loss.backward()
+
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 3)
         optimizer.step()
 
         epoch_loss += loss.item()
@@ -114,6 +115,7 @@ for epoch in range(epochs):
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
     if (epoch % 1 == 0):
+        
         print(f"epoch = {epoch} | loss = {epoch_loss} | val_score = {score} | lr = {lr} | train_score : {score_train}")
 
 

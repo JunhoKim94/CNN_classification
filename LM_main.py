@@ -6,6 +6,7 @@ from model.model import Conv_Classifier, Conv_LM
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import time
+from utils import evaluate
 
 print("\n ====================================> Training Start <=========================================")
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
@@ -45,7 +46,6 @@ num_layer = 2
 model = Conv_LM(embed, h, len(ch_corpus), hidden_size, len(word2idx), num_layer, drop_out)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = lr, weight_decay = 1e-3)
-torch.nn.utils.clip_grad_norm_(model.parameters(), 7)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer, lr_lambda=lambda epoch: 0.95 ** epoch)
 
 model.load_state_dict(torch.load("./model.pt"))
@@ -53,34 +53,6 @@ model.train()
 
 model.to(device)
 st = time.time()
-
-def evaluate(val_words, val_target, model):
-    ppl = torch.nn.CrossEntropyLoss(reduction = 'none', ignore_index = 0)
-    model.eval()
-    batch = 1
-
-    total = 0
-    for i in range(len(val_words) // batch):
-
-        val_x , val_y = get_mini(val_words, val_target, batch, i)
-
-        val_x = torch.Tensor(val_x).to(torch.long).to(device)
-        val_y = torch.Tensor(val_y).to(torch.long).to(device)
-
-        length = val_y.shape[1]
-
-        val_y = val_y.view(batch * length)
-
-        pred = model(val_x)
-        val_loss = ppl(pred, val_y)
-        val_loss = val_loss.view(batch, length)
-        val_loss = torch.sum(torch.exp(torch.mean(val_loss, dim = 1)))
-
-        total += val_loss.item()
-
-    total /= len(val_words)
-
-    return total
 
 #val_loss = evaluate(val_words, val_target, model)
 #max_length = 30
@@ -103,14 +75,15 @@ for epoch in range(epochs):
         loss = criterion(y_pred, batch_y)
         optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
+
         optimizer.step()
         epoch_loss += loss.item()
     
     #PPL /= (total//batch_size)
     epoch_loss /= (total // batch_size)
 
-    val_loss = evaluate(val_words, val_target, model)
-
+    val_loss = evaluate(val_words, val_target, model, device)
 
     scheduler.step()
     for param_group in optimizer.param_groups:
