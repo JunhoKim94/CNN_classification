@@ -42,6 +42,7 @@ class Conv_Classifier(Embedding):
             self.linear.initialize()
         else:
             self.linear.weight.data.uniform_(-0.01, 0.01)
+            #torch.nn.init.kaiming_uniform(self.linear.weight)
             self.linear.bias.data.fill_(0)
         
     def forward(self, x):
@@ -82,7 +83,7 @@ class Conv_LM(Conv_Classifier):
         self.out_linear.weight.data.uniform_(-0.05, 0.05)
         self.out_linear.bias.data.fill_(0)
 
-    def forward(self, x):
+    def forward(self, x, hidden):
         '''
         x = (Batch, Sentence(max_len), Word_length)
         '''
@@ -109,10 +110,10 @@ class Conv_LM(Conv_Classifier):
         out = out.view(batch_size, sen_len, -1)
 
         #seq, batch, hidden
-        out, hidden = self.rnn(out)
+        out, hidden = self.rnn(out, hidden)
 
         #B, S, Class
         out = out.contiguous().view(batch_size * sen_len, -1)
         out = self.out_linear(out)
 
-        return out
+        return out, hidden

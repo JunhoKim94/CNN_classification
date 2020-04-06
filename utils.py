@@ -68,34 +68,6 @@ def plot(acc_stack, loss_stack, epochs):
 
     plt.show()
 
-def evaluate(val_words, val_target, model, device):
-    ppl = torch.nn.CrossEntropyLoss(reduction = 'none', ignore_index = 0)
-    model.eval()
-    batch = 1
-
-    total = 0
-    for i in range(len(val_words) // batch):
-
-        val_x , val_y = get_mini(val_words, val_target, batch, i)
-
-        val_x = torch.Tensor(val_x).to(torch.long).to(device)
-        val_y = torch.Tensor(val_y).to(torch.long).to(device)
-
-        length = val_y.shape[1]
-
-        val_y = val_y.view(batch * length)
-
-        pred = model(val_x)
-        val_loss = ppl(pred, val_y)
-        val_loss = val_loss.view(batch, length)
-        val_loss = torch.sum(torch.exp(torch.mean(val_loss, dim = 1)))
-
-        total += val_loss.item()
-
-    total /= len(val_words)
-
-    return total
-
 
 
 if __name__ == "__main__":

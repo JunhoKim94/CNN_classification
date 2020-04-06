@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 from tqdm import tqdm
 import re
+import torch
 
 def wordtoalpha(word, subcorpus, max_len):
     ret = [subcorpus["<BOS>"]]
@@ -111,16 +112,18 @@ def wordtoid(words,word2idx,sub_corpus):
 def get_mini(data, label, batch_size, iteration):
     #data = data[:batch_size *len(data)//batch_size]
     #label = label[:batch_size * len(label) // batch_size]
-    #seed = np.random.choice(len(data), batch_size, replace = False)
+    seed = np.random.choice(len(data), batch_size, replace = False)
 
-    length = label[iteration * batch_size : (iteration + 1) * batch_size, -1]
+    #length = label[iteration * batch_size : (iteration + 1) * batch_size, -1]
+    length = label[seed, -1]
     max_length = max(length)
 
-    #train_data = data[seed, :(max_length - 1)]
-    #target = label[seed, 1 :max_length]
 
-    train_data = data[ iteration * batch_size : (iteration + 1) * batch_size , :(max_length - 1)]
-    target = label[iteration * batch_size : (iteration + 1) * batch_size , 1:max_length]
+    train_data = data[seed, :(max_length - 1)]
+    target = label[seed, 1 :max_length]
+
+    #train_data = data[ iteration * batch_size : (iteration + 1) * batch_size , :(max_length - 1)]
+    #target = label[iteration * batch_size : (iteration + 1) * batch_size , 1:max_length]
 
     return train_data, target
 
@@ -143,3 +146,31 @@ def clean_str(string, TREC = True):
     string = re.sub(r"\?", " \? ", string) 
     string = re.sub(r"\s{2,}", " ", string)    
     return string.strip() if TREC else string.strip().lower()
+
+def evaluate(val_words, val_target, model, device):
+    ppl = torch.nn.CrossEntropyLoss(reduction = 'none', ignore_index = 0)
+    model.eval()
+    batch = 1
+
+    total = 0
+    hidden = (torch.zeros(2, batch, model.hidden).to(device), torch.zeros(2, batch, model.hidden).to(device))
+    for i in range(len(val_words) // batch):
+
+        val_x , val_y = get_mini(val_words, val_target, batch, i)
+
+        val_x = torch.Tensor(val_x).to(torch.long).to(device)
+        val_y = torch.Tensor(val_y).to(torch.long).to(device)
+        length = val_y.shape[1]
+
+        val_y = val_y.view(batch * length)
+
+        pred, _ = model(val_x, hidden)
+        val_loss = ppl(pred, val_y)
+        val_loss = val_loss.view(batch, length)
+        val_loss = torch.sum(torch.exp(torch.mean(val_loss, dim = 1)))
+
+        total += val_loss.item()
+
+    total /= len(val_words)
+
+    return total

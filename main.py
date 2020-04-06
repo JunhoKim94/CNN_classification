@@ -7,13 +7,14 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from utils import *
 
-print("\n" + "=" * 20 + "> Training Start < " + "=" * 20)
+print("=" * 20 + "> Training Start < " + "=" * 20)
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 #device = torch.device("cpu")
 print(torch.cuda.is_available())
-train_type = "rand"
+train_type = "multichannel"
 
-path = ["./data/TREC/TREC.train.all" , "./data/TREC/TREC.test.all"]
+#path = ["./data/TREC/TREC.train.all" , "./data/TREC/TREC.test.all"]
+path = ["./data/MR/rt-polarity.txt"]
 #path = ["./data/Subj/subj.all"]
 #path = ["./data/SST-2/stsa.binary.dev","./data/SST-2/stsa.binary.train","./data/SST-2/stsa.binary.test" ]
 #path = ["./data/SST-1/stsa.fine.dev", "./data/SST-1/stsa.fine.train", "./data/SST-1/stsa.fine.test"]
@@ -54,7 +55,7 @@ total = len(train_data)
 embed_size = 300
 h = [(3,100), (4,100), (5,100)]
 class_num = max(target) + 1
-ch = 1
+ch = 2
 batch_size = 50
 learning_rate = 0.001
 epochs = 15
