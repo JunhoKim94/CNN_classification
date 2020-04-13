@@ -109,7 +109,7 @@ def wordtoid(words,word2idx,sub_corpus):
 
     return train, label
 
-def get_mini(data, label, batch_size, iteration):
+def get_mini(data, label, batch_size):
     #data = data[:batch_size *len(data)//batch_size]
     #label = label[:batch_size * len(label) // batch_size]
     seed = np.random.choice(len(data), batch_size, replace = False)
@@ -148,28 +148,33 @@ def clean_str(string, TREC = True):
     return string.strip() if TREC else string.strip().lower()
 
 def evaluate(val_words, val_target, model, device):
-    ppl = torch.nn.CrossEntropyLoss(reduction = 'none', ignore_index = 0)
+    #ppl = torch.nn.CrossEntropyLoss(reduction = 'none', ignore_index = 0)
+    ppl = torch.nn.CrossEntropyLoss()
     model.eval()
     batch = 1
 
     total = 0
     hidden = (torch.zeros(2, batch, model.hidden).to(device), torch.zeros(2, batch, model.hidden).to(device))
-    for i in range(len(val_words) // batch):
+    with torch.no_grad():
+        for i in range(len(val_words) // batch):
 
-        val_x , val_y = get_mini(val_words, val_target, batch, i)
+            val_x , val_y = get_mini(val_words, val_target, batch)
 
-        val_x = torch.Tensor(val_x).to(torch.long).to(device)
-        val_y = torch.Tensor(val_y).to(torch.long).to(device)
-        length = val_y.shape[1]
+            val_x = torch.Tensor(val_x).to(torch.long).to(device)
+            val_y = torch.Tensor(val_y).to(torch.long).to(device)
+            length = val_y.shape[1]
 
-        val_y = val_y.view(batch * length)
+            val_y = val_y.view(batch * length)
 
-        pred, _ = model(val_x, hidden)
-        val_loss = ppl(pred, val_y)
-        val_loss = val_loss.view(batch, length)
-        val_loss = torch.sum(torch.exp(torch.mean(val_loss, dim = 1)))
+            pred, _ = model(val_x, hidden)
+            val_loss = ppl(pred, val_y)
+            '''
+            val_loss = val_loss.view(batch, length)
+            val_loss = torch.sum(torch.exp(torch.mean(val_loss, dim = 1)))
+            '''
+            val_loss = batch * val_loss
 
-        total += val_loss.item()
+            total += val_loss.item()
 
     total /= len(val_words)
 
